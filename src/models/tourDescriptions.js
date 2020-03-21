@@ -1,0 +1,22 @@
+export default {
+    tour: null,
+    qty: null,
+    origen: null,
+    destino: null,
+    hospedaje: null,
+    transporte: null,
+    fecha_ida_salida: null,
+    hora_ida_salida: null,
+    fecha_vuelta_salida: null,
+    hora_vuelta_salida: null,
+    fecha_ida_llegada: null,
+    hora_ida_llegada: null,
+    fecha_vuelta_llegada: null,
+    hora_vuelta_llegada: null,
+    sitio_ida_salida: null,
+    sitio_vuelta_salida: null,
+    sitio_ida_llegada: null,
+    sitio_vuelta_llegada: null,
+    status: "activo",
+    fecha_registro: new Date()
+}
