@@ -1,159 +1,129 @@
+import React, { Component } from 'react';
+import { Table, Button, Container, FormGroup, Label, Input } from 'reactstrap';
 
-import '../App.css';
-import { Toggle, ButtonToggle, Container, Row, Col, Table } from 'reactstrap';
-import React, { useState, useEffect } from 'react';
-import { InputGroupText, InputGroup, InputGroupAddon, Button, Modal, ModalHeader, ModalBody, ModalFooter, Input, Label, Form, FormGroup } from 'reactstrap';
+import AgregarClienteModal from './clientes/agregarClienteModal';
+import EditarClienteModal from './clientes/editarClienteModal';
+
+import { withFirebase } from './firebase/index';
 
 
-const Clientes = (props) => {
-  const { Nuevo, nombreclase } = props;
-
-  const [modal, setModal] = useState(false);
-  const [unmountOnClose, setUnmountOnClose] = useState(true);
-
-  const toggle = () => setModal(!modal);
-
-  useEffect(() => {
-    console.log('useEffect');
-  })
- 
-  const changeUnmountOnClose = e => {
-    let value = e.target.value;
-    setUnmountOnClose(JSON.parse(value));
+class Clientes extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      buscarValor: '',
+      clientesColeccion: [],
+      clientesColeccionCache: [],
+      clientesCount: 0
+    };
   }
 
+  componentDidMount() {
+    this._loadData();
+  }
 
-  return (
-    <div>
-      <br></br><br></br>
-      <Container>
-        <Row xs="2">
-          <Col sm={{ size: 'auto', offset: -1 }}><h3 >Clientes</h3></Col>
-          <Col sm={{ size: 'auto', offset: 2 }}><h3 >163</h3></Col>
-        </Row>
-        <Row xs="2">
-          <Col sm={{ size: 'auto', offset: -1 }} ><h4 >Introduce algun dato del cliente:</h4></Col>
+  _loadData = () => {
+    this.props.firebase.firestore.collection("Clientes").onSnapshot(async (querySnapshot) => {
+      let clientesColeccionBackend = [];
 
-          <div>
-            <Col inline onSubmit={(e) => e.preventDefault()} sm={{ size: 'auto', offset: 6 }} onClick={toggle} ><Button color="primary" size="md"  >{Nuevo}+Nuevo</Button>{' '}
-            </Col>
-            <Modal isOpen={modal} toggle={toggle} className={nombreclase} unmountOnClose={unmountOnClose}>
-              <ModalHeader toggle={toggle}>Admin clientes</ModalHeader>
-              <ModalBody>
-                <div>
-                  <InputGroup>
-                    <InputGroupAddon addonType="prepend">
-                      <InputGroupText>@</InputGroupText>
-                    </InputGroupAddon>
-                    <Input placeholder="Nombre" />
-                  </InputGroup>
-                  <br />
-                  <InputGroup>
-                    <InputGroupAddon addonType="prepend">
-                      <InputGroupText></InputGroupText>
-                    </InputGroupAddon>
-                    <Input placeholder="Celular" />
-                  </InputGroup>
-                  <br />
-                  <InputGroup>
-                    <Input placeholder="Email" />
-                    <InputGroupAddon addonType="append">
-                      <InputGroupText>@example.com</InputGroupText>
-                    </InputGroupAddon>
-                  </InputGroup>
-                  <br />
-                </div>
-              </ModalBody>
-              <ModalFooter>
-                <Button color="primary" onClick={toggle}>Guardar</Button>{' '}
-                <Button color="secondary" onClick={toggle}>Cancel</Button>
-              </ModalFooter>
-            </Modal>
-          </div>
-        </Row>
+      await querySnapshot.forEach((doc) => {
+        clientesColeccionBackend.push({ id: doc.id, data: doc.data() });
+      });
 
+      this.setState({
+        buscarValor: '',
+        clientesColeccion: clientesColeccionBackend,
+        clientesColeccionCache: clientesColeccionBackend,
+        clientesCount: clientesColeccionBackend.length
+      });
 
+    });
+  }
 
+  _filterData = async (filterData) => {
+    let clientesColeccionFiltro = await this.state.clientesColeccion.filter((cliente) => {
+      return cliente.data.client_name.toLowerCase().trim().includes(filterData.toLowerCase().trim());
+    });
 
+    if(clientesColeccionFiltro.length <= 0){
+      clientesColeccionFiltro = await this.state.clientesColeccionCache.filter((cliente) => {
+        return cliente.data.client_name.toLowerCase().includes(filterData.toLowerCase());
+      });
+    }
 
+    this.setState({
+      buscarValor: filterData,
+      clientesColeccion: clientesColeccionFiltro,
+      clientesCount: clientesColeccionFiltro.length
+    });
+    
+  }
 
-        <Form >
-          <FormGroup row>
-            <Col sm={8}>
-              <Label for="exampleSearch"></Label>
-              <Input className="forma"
-                type="search"
-                name="search"
-                id="exampleSearch"
-                placeholder="Buscador"
-              />
-            </Col>
-          </FormGroup>
-        </Form>
+  onBuscarChange = (event) => {
+    const { value } = event.target;
+    if(value === ""){
+      this._loadData();
+    } else {
+      this._filterData(value);
+    }
+    
+  }
 
-        <Table Row xs="2" dark striped>
+  onDelete = (docId) => {
+    if (window.confirm("¿Realmente quieres ELIMINAR este cliente?")) {
+      this.props.firebase.firestore.collection("Clientes").doc(docId).delete()
+        .then(function () {
+          console.log("Document successfully deleted!");
+        }).catch(function (error) {
+          console.error("Error removing document: ", error);
+        })
+    }
+    else
+      return false;
+  }
 
+  onExpediente = (docId) => {
+    this.props.history.push(`/expediente/${docId}`);
+  }
+
+  render() {
+    return (
+      <Container className="mt-5" >
+        <h1>Clientes {this.state.clientesCount}</h1>
+        <AgregarClienteModal /><br />
+        <FormGroup>
+          <Label for="buscarCliente">Introduce algun dato del cliente:</Label>
+          <Input type="text" name="buscarCliente" id="buscarCliente" placeholder="Buscar cliente..." onChange={this.onBuscarChange} value={this.state.buscarValor} />
+        </FormGroup>
+        <Table dark striped responsive>
           <thead>
-
             <tr>
-              <Row >
-                <Col> <th>Nombre</th></Col>
-                <Col><th>Celular</th></Col>
-                <Col ><th>E-mail</th></Col>
-                <Col><th></th></Col>
-
-              </Row>
+              <th scope="row">Nombre</th>
+              <th>Celular</th>
+              <th>E-mail</th>
+              <th></th>
             </tr>
-
           </thead>
           <tbody>
-            <tr>
-              <Row>
-                <Col> <td>Mark</td></Col>
-                <Col><td>Otto</td></Col>
-                <Col><td>@mdo</td></Col>
-                <Col xs="3.5"><td><Row>
-                  <Col xs="8" sm="4"> <ButtonToggle color="primary">Expediente</ButtonToggle>{' '}</Col>
-                  <Col xs="6" sm="3"><ButtonToggle color="warning">Editar</ButtonToggle>{' '}</Col>
-                  <Col xs="6" sm="3"><ButtonToggle color="danger">Eliminar</ButtonToggle>{' '}</Col>
-                </Row></td></Col>
-
-              </Row>
-            </tr>
-            <tr>
-              <Row>
-                <Col> <td>Jacob</td></Col>
-                <Col><td>Jacob</td></Col>
-                <Col><td>@fat</td></Col>
-                <Col xs="3.5"><td><Row>
-                  <Col xs="8" sm="4"> <ButtonToggle color="primary">Expediente</ButtonToggle>{' '}</Col>
-                  <Col xs="6" sm="3"><ButtonToggle color="warning">Editar</ButtonToggle>{' '}</Col>
-                  <Col xs="6" sm="3"><ButtonToggle color="danger">Eliminar</ButtonToggle>{' '}</Col>
-                </Row></td></Col>
-
-              </Row>
-            </tr>
-
-
-            <tr>
-              <Row>
-                <Col> <td>Jacob</td></Col>
-                <Col><td>Jacob</td></Col>
-                <Col><td>@fat</td></Col>
-                <Col xs="3.5"><td><Row>
-                  <Col xs="8" sm="4"> <ButtonToggle color="primary">Expediente</ButtonToggle>{' '}</Col>
-                  <Col xs="6" sm="3"><ButtonToggle color="warning">Editar</ButtonToggle>{' '}</Col>
-                  <Col xs="6" sm="3"><ButtonToggle color="danger">Eliminar</ButtonToggle>{' '}</Col>
-                </Row></td></Col>
-              </Row>
-            </tr>
+            {this.state.clientesColeccion.map((cliente) => {
+              return (
+                <tr key={cliente.id}>
+                  <td>{cliente.data.client_name}</td>
+                  <td>{cliente.data.celular}</td>
+                  <td>{cliente.data.mail}</td>
+                  <td>
+                    <Button color="primary" className="mr-4" onClick={()=>this.onExpediente(cliente.id)}>Expediente</Button>
+                    <EditarClienteModal docId={cliente.id} datosCliente={cliente.data} />
+                    <Button color="danger" className="ml-4" onClick={()=>this.onDelete(cliente.id)}>Eliminar</Button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
-
         </Table>
       </Container>
-    </div>
-  )
+    );
+  }
 }
 
-
-export default Clientes;
+export default withFirebase(Clientes);

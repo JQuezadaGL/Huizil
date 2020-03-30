@@ -13,6 +13,7 @@ class Proveedores extends Component {
     this.state = {
       buscarValor: '',
       proveedoresColeccion: [],
+      proveedoresColeccionCache: [],
       proveedoresCount: 0
     };
   }
@@ -83,7 +84,7 @@ class Proveedores extends Component {
 
   render() {
     return (
-      <Container>
+      <Container className="mt-5" >
         <h1>Proveedores {this.state.proveedoresCount}</h1>
         <AgregarProveedorModal /><br />
         <FormGroup>

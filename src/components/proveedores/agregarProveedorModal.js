@@ -89,7 +89,7 @@ const AgregarProveedorModal = (props) => {
           </Form>
         </ModalBody>
         <ModalFooter>
-          <Button color="primary" onClick={onSubmit}>Actualizar</Button>
+          <Button color="primary" onClick={onSubmit}>Guardar</Button>
           <Button color="danger" onClick={toggle}>Cancelar</Button>
         </ModalFooter>
       </Modal>
